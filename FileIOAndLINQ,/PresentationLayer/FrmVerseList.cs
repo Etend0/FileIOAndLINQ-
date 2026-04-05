@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace FileIOAndLINQ_.PresentationLayer
+namespace FileIOAndLINQ.PresentationLayer
 {
     public partial class FrmVerseList : Form
     {
