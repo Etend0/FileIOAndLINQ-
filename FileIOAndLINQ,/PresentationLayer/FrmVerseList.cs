@@ -30,6 +30,11 @@ namespace FileIOAndLINQ.PresentationLayer
         private VerseLogic _verseLogic;
         // Binding source for the data grid view
         private BindingSource _versesBindingSource;
+        // Filters for file dialogs
+        string filter = "All Files (*.*)|*.*|" +
+            "Text Files (*.txt)|*.txt|" +
+            "CSV Files (*.csv)|*.csv|" +
+            "JSON Files (*.json)|*.json";
 
         /// <summary>
         /// Default constructor for FrmVerseList
@@ -47,7 +52,10 @@ namespace FileIOAndLINQ.PresentationLayer
             _versesBindingSource = new BindingSource();
 
             // Set the saveToolStripMenuItem click event handler
-            saveToolStripMenuItem.Click += TmsSaveClickEH;
+            saveToolStripMenuItem.Click += TsmSaveClickEH;
+
+            // Set the loadToolStripMenuItem click event handler
+            loadToolStripMenuItem.Click += TsmLoadClickEh;
         }
 
         /// <summary>
@@ -418,14 +426,10 @@ namespace FileIOAndLINQ.PresentationLayer
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TmsSaveClickEH(object sender, EventArgs e)
+        private void TsmSaveClickEH(object sender, EventArgs e)
         {
             // Declare and initialize
             // Filters for file dialogs
-            string filter = "All Files (*.*)|*.*|" +
-            "Text Files (*.txt)|*.txt|" +
-            "CSV Files (*.csv)|*.csv|" +
-            "JSON Files (*.json)|*.json";
             string fileName = "", result = "";
             // Variable to store the result of the SaveFileDialog
             DialogResult dialogResult;
@@ -451,5 +455,39 @@ namespace FileIOAndLINQ.PresentationLayer
                 }
             }
         } // End of TmsSaveClickEH
+
+        /// <summary>
+        /// Click event handler to get verses from a test file
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TsmLoadClickEh(object sender, EventArgs e)
+        {
+            // Declare and initialize
+            string fileName = "", result = "";
+            DialogResult dialogResult;
+
+            // Create and open file dialog
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                // Set the title for the dialog
+                openFileDialog.Title = "Open File";
+                // Set the filter for the dialog
+                openFileDialog.Filter = filter;
+                // Show the file dialog and store the result
+                dialogResult = openFileDialog.ShowDialog();
+                // Check to make sure the file dialog return OK
+                if (dialogResult == DialogResult.OK)
+                {
+                    // Get the selected file name
+                    fileName = openFileDialog.FileName;
+                    // Read the file to add the verses to verse inventory
+                    result = _verseLogic.ReadVersesFromFile(fileName);
+                    // Display the result to the user
+                    MessageBox.Show(result);
+                    RefreshVersesDgv();
+                }
+            }
+        } // End of TsmLoadClickEH
     }
 }
