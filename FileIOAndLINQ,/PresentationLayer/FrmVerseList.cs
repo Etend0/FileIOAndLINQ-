@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FileIOAndLINQ.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -264,5 +265,74 @@ namespace FileIOAndLINQ.PresentationLayer
                 lblImportanceError.Visible = true;
             }
         }
+
+        /// <summary>
+        /// Click event handler top add a new verse
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BtnAddVerseClickEH(object sender, EventArgs e)
+        {
+            // Declare and initialize
+            int chapter = -1;
+            VerseRequestModel verse;
+
+            // Check if all the input is valid
+            if (isValidBook && isValidChapter && isValidVerse && isValidText && isValidMeaning && isValidImportance)
+            {
+                // Set up a try-catch to case the chapter to an int
+                try
+                {
+                    // Parse the chapter to an int
+                    chapter = int.Parse(txtVerseChapter.Text);
+                }
+                catch (Exception)
+                {
+                    // Update the error label for the chapter
+                    lblChapterError.Text = "The chapter must be a number";
+                    // Show the chapter error label
+                    lblChapterError.Visible = true;
+                }
+                // Create the verse variable
+                verse = new VerseRequestModel(cmbVerseBook.Text, chapter, txtVerseVerse.Text,
+                    txtVerseText.Text, txtVerseMeaning.Text, ((int) nudVerseImportance.Value));
+            }
+            // Check if the book is invalid
+            else if (!isValidBook)
+            {
+                // Show the book error label
+                lblBookError.Visible = true;
+            }
+            // Check if the chapter is invalid
+            else if (!isValidChapter)
+            {
+                // Show the chapter error label
+                lblChapterError.Visible = true;
+            }
+            // Check if the verse is invalid
+            else if (!isValidVerse)
+            {
+                // Show the verse error label
+                lblVerseError.Visible = true;
+            }
+            // Check if the text is invalid
+            else if (!isValidText)
+            {
+                // Show the text error label
+                lblTextError.Visible = true;
+            }
+            // Check if the meaning is invalid
+            else if (!isValidMeaning)
+            {
+                // Show the meaning error label
+                lblMeaningError.Visible = true;
+            }
+            // Check if the importance is invalid
+            else if (!isValidImportance)
+            {
+                // Show the importance error label
+                lblImportanceError.Visible = true;
+            }
+        } // End of BtnAddVerseClickEH
     }
 }
