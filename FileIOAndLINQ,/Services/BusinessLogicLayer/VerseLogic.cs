@@ -65,5 +65,16 @@ namespace FileIOAndLINQ.Services.BusinessLogicLayer
             // Return the list of VerseDisplayModels
             return displayVerses;
         }
+
+        /// <summary>
+        /// Write the verses list to the given file
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public string WriteVerseToFile(string fileName)
+        {
+            // Call and return the DAO method
+            return _verseDAO.WriteVerseToFile(fileName);
+        }
     }
 }
