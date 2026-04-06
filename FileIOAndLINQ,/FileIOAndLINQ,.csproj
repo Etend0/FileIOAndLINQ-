@@ -9,8 +9,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\BusinessLogicLayer\" />
-  </ItemGroup>
-
 </Project>

@@ -32,7 +32,7 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         /// </summary>
         /// <param name="verse"></param>
         /// <returns></returns>
-        public int AddVerse(VerseDataModel verse)
+        public int AddVerse(VerseRequestModel verse)
         {
             // Declare and initialize
             int id = _verses.Count + 1;
@@ -42,7 +42,7 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
             newVerse = new VerseDataModel(id, verse.Book, verse.Chapter,
                 verse.Verse, verse.Text, verse.Meaning, verse.Importance);
             // Add the verse to the verses list
-            _verses.Add(verse);
+            _verses.Add(newVerse);
             // Return the id of the new verse
             return id;
         }
