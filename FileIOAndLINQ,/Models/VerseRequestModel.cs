@@ -37,7 +37,7 @@ namespace FileIOAndLINQ.Models
         }
 
         /// <summary>
-        /// Parameterize constructor for the Verse Request Model
+        /// Parameterized constructor for the Verse Request Model
         /// </summary>
         /// <param name="book"></param>
         /// <param name="chapter"></param>
