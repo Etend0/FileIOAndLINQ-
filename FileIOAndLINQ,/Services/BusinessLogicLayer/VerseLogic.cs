@@ -35,10 +35,14 @@ namespace FileIOAndLINQ.Services.BusinessLogicLayer
         /// <returns></returns>
         public int AddVerse(VerseRequestModel verse)
         {
-            // Call the AddVerse method in the data access layer and return the result
+            // Return the DAO method
             return _verseDAO.AddVerse(verse);
         }
 
+        /// <summary>
+        /// Get a list of verses from the inventory
+        /// </summary>
+        /// <returns></returns>
         public List<VerseDisplayModel> GetAllVerses()
         {
             // Declare and initialize

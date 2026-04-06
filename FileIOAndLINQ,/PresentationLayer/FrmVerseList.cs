@@ -98,7 +98,7 @@ namespace FileIOAndLINQ.PresentationLayer
             cmbVerseBook.DataSource = bibleBooks;
             // Set the automatically selected book to -1 (none)
             cmbVerseBook.SelectedIndex = -1;
-            // Set the bombo box to suggest books based on the user typing
+            // Set the combo box to suggest books based on the user typing
             cmbVerseBook.AutoCompleteMode = AutoCompleteMode.Suggest;
             // Set the autoCompleteSource to the list items
             cmbVerseBook.AutoCompleteSource = AutoCompleteSource.ListItems;
@@ -287,7 +287,7 @@ namespace FileIOAndLINQ.PresentationLayer
             int chapter = -1;
             VerseRequestModel verse;
 
-            // Check if all the input is valid
+            // Check the flags to see if the user has entered valid data
             if (isValidBook && isValidChapter && isValidVerse && isValidText && isValidMeaning && isValidImportance)
             {
                 // Set up a try-catch to case the chapter to an int
@@ -311,6 +311,7 @@ namespace FileIOAndLINQ.PresentationLayer
                 // Clear the input fields
                 ClearInputFields();
                 // Refresh the data grid view
+                RefreshVersesDgv();
             }
             // Check if the book is invalid
             else if (!isValidBook)
@@ -357,7 +358,7 @@ namespace FileIOAndLINQ.PresentationLayer
         {
             // Clear the book combo box
             cmbVerseBook.SelectedIndex = -1;
-            // Clear the t extboxes in grpAddVerse
+            // Clear the textboxes in grpAddVerse
             foreach (TextBox textBox in grpAddVerse.Controls.OfType<TextBox>())
             {
                 // Clear the textbox
@@ -368,7 +369,7 @@ namespace FileIOAndLINQ.PresentationLayer
         }
 
         /// <summary>
-        /// Loag event handler for FrmVerseList
+        /// Load event handler for FrmVerseList
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

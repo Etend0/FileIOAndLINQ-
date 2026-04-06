@@ -384,6 +384,7 @@
             MainMenuStrip = mnsFileActions;
             Name = "FrmVerseList";
             Text = "Bible Verses";
+            Load += FrmVerseList_Load;
             mnsFileActions.ResumeLayout(false);
             mnsFileActions.PerformLayout();
             grpAddVerse.ResumeLayout(false);
