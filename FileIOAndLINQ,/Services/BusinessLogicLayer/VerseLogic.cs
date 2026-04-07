@@ -78,24 +78,24 @@ namespace FileIOAndLINQ.Services.BusinessLogicLayer
         /// <summary>
         /// Get a list of the least important verses
         /// </summary>
-        /// <param name="numToFind"></param>
+        /// <param name="numVersesSaved"></param>
         /// <returns></returns>
-        public List<VerseDisplayModel> GetLeastImportantVerses(int numToFind)
+        public List<VerseDisplayModel> GetLeastImportantVerses(int numVersesSaved)
         {
             // Get a list of the least important data verses
-            List<VerseDataModel> dataVerses = _verseDAO.GetLeastImportantVerses(numToFind);
+            List<VerseDataModel> dataVerses = _verseDAO.GetLeastImportantVerses(numVersesSaved);
             return ConvertVerseDataToDisplay(dataVerses);
         }
 
         /// <summary>
         /// Get a list of the most important verses
         /// </summary>
-        /// <param name="numToFind"></param>
+        /// <param name="numVersesSaved"></param>
         /// <returns></returns>
-        public List<VerseDisplayModel> GetMostImportantVerses(int numToFind)
+        public List<VerseDisplayModel> GetMostImportantVerses(int numVersesSaved)
         {
             // Get a list of the most important data verses
-            List<VerseDataModel> dataVerses = _verseDAO.GetMostImportantVerses(numToFind);
+            List<VerseDataModel> dataVerses = _verseDAO.GetMostImportantVerses(numVersesSaved);
             return ConvertVerseDataToDisplay(dataVerses);
         }
 
@@ -123,6 +123,16 @@ namespace FileIOAndLINQ.Services.BusinessLogicLayer
             }
             // Return the list of VerseDisplayModels
             return displayVerses;
+        }
+
+        /// <summary>
+        /// Get the total count of verses
+        /// </summary>
+        /// <returns></returns>
+        public int GetTotalVerseCount()
+        {
+            // Call and return the DAO method
+            return _verseDAO.GetTotalVerseCount();
         }
     }
 }

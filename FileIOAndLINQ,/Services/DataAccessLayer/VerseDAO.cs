@@ -25,10 +25,9 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         /// </summary>
         public VerseDAO()
         {
+            ExcelPackage.License.SetNonCommercialPersonal("<Elijah Hodge>");
             // Create a new List of VerseDataModels
             _verses = new List<VerseDataModel>();
-            // Set the EPPlus license context for non-commercial use
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
         /// <summary>
@@ -40,14 +39,11 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         {
             // Declare and initialize
             int id = _verses.Count + 1;
-            VerseDataModel newVerse = new VerseDataModel();
-
-            // Create a new verse based on the verse request model
-            newVerse = new VerseDataModel(id, verse.Book, verse.Chapter,
+            VerseDataModel newVerse = new VerseDataModel(id, verse.Book, verse.Chapter,
                 verse.Verse, verse.Text, verse.Meaning, verse.Importance);
             // Add the verse to the verses list
             _verses.Add(newVerse);
-            // Return the id of the new verse
+            // Do not increment the saved count here
             return id;
         }
 
@@ -70,7 +66,6 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         {
             // Declare and initialize
             string serialized = "";
-
             // Create a switch based on the file extension
             switch (Path.GetExtension(fileName))
             {
@@ -95,15 +90,13 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                     serialized = ServiceStack.Text.XmlSerializer.SerializeToString(_verses);
                     break;
                 case ".xlsx":
-                    // Use EPPlus to write directly to the xlsx file
                     try
                     {
-                        // Create a new ExcelPackage
+                        // Use EPPlus to write to an Excel file
                         using (ExcelPackage package = new ExcelPackage())
                         {
-                            // Add a worksheet named "Verses"
+                            // Add a new worksheet to the workbook
                             ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Verses");
-                            // Add header row
                             worksheet.Cells[1, 1].Value = "Id";
                             worksheet.Cells[1, 2].Value = "Book";
                             worksheet.Cells[1, 3].Value = "Chapter";
@@ -111,7 +104,7 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                             worksheet.Cells[1, 5].Value = "Text";
                             worksheet.Cells[1, 6].Value = "Meaning";
                             worksheet.Cells[1, 7].Value = "Importance";
-                            // Loop through the _verses list and add each verse to a row
+                            // Loop through the _verses list and add each verse to the worksheet
                             for (int i = 0; i < _verses.Count; i++)
                             {
                                 int row = i + 2;
@@ -132,14 +125,18 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                     {
                         return ex.Message;
                     }
+                    // Return here if the file is an Excel file since it is handled separately
                     break;
                 default:
                     return "File not recognized";
             }
             try
             {
-                // Use File.WriteAllText to send the serialized string to the file
-                File.WriteAllText(fileName, serialized);
+                // If we successfully serialized and the file is not an Excel file, write the serialized string to the file
+                if (Path.GetExtension(fileName) != ".xlsx")
+                {
+                    File.WriteAllText(fileName, serialized);
+                }
             }
             catch (Exception ex)
             {
@@ -156,6 +153,9 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         /// <returns></returns>
         public string ReadVersesFromFile(string fileName)
         {
+            // Clear the current verses list to avoid duplicates
+            _verses.Clear();
+
             // Declare and initialize
             string data = "";
             List<VerseDataModel> dataVerses = new List<VerseDataModel>();
@@ -163,9 +163,12 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
             // Handle xlsx separately since EPPlus reads the file directly
             if (Path.GetExtension(fileName) == ".xlsx")
             {
+                // Set up a try-catch to read the Excel file
                 try
                 {
+                    // Use EPPlus to read from an Excel file
                     FileInfo fileInfo = new FileInfo(fileName);
+                    // Check if the file exists
                     using (ExcelPackage package = new ExcelPackage(fileInfo))
                     {
                         // Get the first worksheet
@@ -185,6 +188,7 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                                 worksheet.Cells[row, 6].Value?.ToString() ?? "",
                                 int.TryParse(worksheet.Cells[row, 7].Value?.ToString(), out int importance) ? importance : 0
                             );
+                            // Add the verse to the dataVerses list
                             dataVerses.Add(verse);
                         }
                     }
@@ -201,7 +205,6 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                 {
                     // Get the text from the file
                     data = File.ReadAllText(fileName);
-
                 }
                 catch (Exception ex)
                 {
@@ -311,6 +314,53 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
             List<VerseDataModel> mostImportantVerses = _verses.OrderByDescending(verse => verse.Importance).Take(numToFind).ToList();
             // Return the list of the most important verses
             return mostImportantVerses;
+        }
+
+        /// <summary>
+        /// Calculates the total number of verses, including ranges (example, 1-3 counts as 3 verses)
+        /// </summary>
+        /// <returns>Total number of verses</returns>
+        public int GetTotalVerseCount()
+        {
+            // Calculate the total number of verses in the current _verses list including ranges and comma-separated values
+            int total = 0;
+            // Loop through the _verses list and calculate the total based on the Verse property
+            foreach (var verse in _verses)
+            {
+                // Check if the Verse property is empty or whitespace, count it as 1 verse
+                if (string.IsNullOrWhiteSpace(verse.Verse))
+                {
+                    // Increment the total by 1 and continue to the next verse
+                    total += 1;
+                    continue;
+                }
+                // Check if the Verse property contains a range and calculate the number of verses in the range
+                var parts = verse.Verse.Split(new[] { '-', '–', '—' }, StringSplitOptions.RemoveEmptyEntries);
+                // If there are exactly 2 parts and both can be parsed as integers, calculate the number of verses in the range
+                if (parts.Length == 2)
+                {
+                    // Use a try parse to parse the start and end of the range
+                    if (int.TryParse(parts[0].Trim(), out int start) && int.TryParse(parts[1].Trim(), out int end) && end >= start)
+                    {
+                        // Increment the total by the number of verses in the range and continue to the next verse
+                        total += (end - start + 1);
+                        continue;
+                    }
+                }
+                // If the Verse property does not contain a range, check if it contains multiple verses separated by commas and calculate the number of verses
+                if (verse.Verse.Contains(","))
+                {
+                    // Increment the total by the number of verses separated by commas
+                    total += verse.Verse.Split(',').Length;
+                }
+                else
+                {
+                    // Otherwise, count it as 1 verse
+                    total += 1;
+                }
+            }
+            // Return the total count of verses
+            return total;
         }
     }
 }

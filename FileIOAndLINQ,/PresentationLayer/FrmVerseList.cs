@@ -1,5 +1,6 @@
 ﻿using FileIOAndLINQ.Models;
 using FileIOAndLINQ.Services.BusinessLogicLayer;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,6 +9,7 @@ using System.Drawing;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+
 
 /*
  * Elijah Hodge
@@ -35,15 +37,17 @@ namespace FileIOAndLINQ.PresentationLayer
             "Text Files (*.txt)|*.txt|" +
             "CSV Files (*.csv)|*.csv|" +
             "JSON Files (*.json)|*.json|" +
-            "Excel Files (*.xml)|*.xml";
-        // Store the number of verses to show
-        private int _numToShow;
+            "Excel Files (*.xml)|*.xml|" +
+            "Excel Files (*.xlsx)|*.xlsx";
+        // Store the number of verses saved
+        private int _numVersesSaved;
 
         /// <summary>
         /// Default constructor for FrmVerseList
         /// </summary>
         public FrmVerseList()
         {
+
             InitializeComponent();
             // Initialize and hide the error list
             InitializeErrors();
@@ -61,6 +65,12 @@ namespace FileIOAndLINQ.PresentationLayer
 
             // Set the loadToolStripMenuItem click event handler
             loadToolStripMenuItem.Click += TsmLoadClickEh;
+
+            // Wire up the search box for real-time filtering
+            txtbxSearch.TextChanged += TxtbxSearch_TextChanged;
+
+            // Update the verses saved label on startup
+            UpdateVersesSavedLabel();
         }
 
         /// <summary>
@@ -393,6 +403,7 @@ namespace FileIOAndLINQ.PresentationLayer
         {
             // Set the data source for the data grid view
             dgvVerseDisplay.DataSource = _versesBindingSource;
+            UpdateVersesSavedLabel();
         }
 
         /// <summary>
@@ -460,6 +471,8 @@ namespace FileIOAndLINQ.PresentationLayer
                     result = _verseLogic.WriteVerseToFile(fileName);
                     // Show the result to the user
                     MessageBox.Show(result);
+                    // Update the verses saved label after saving
+                    UpdateVersesSavedLabel();
                 }
             }
         } // End of TmsSaveClickEH
@@ -494,24 +507,25 @@ namespace FileIOAndLINQ.PresentationLayer
                     // Display the result to the user
                     MessageBox.Show(result);
                     RefreshVersesDgv();
+                    UpdateVersesSavedLabel();
                 }
             }
         } // End of TsmLoadClickEH
 
         /// <summary>
-        /// Update the _numToShow variable and the
+        /// Update the _numVersesSaved variable and the
         /// most/least important verses radio buttons
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void TrbNumberToShowScrollEH(object sender, EventArgs e)
         {
-            // Update _numToShow
-            _numToShow = trbNumberToShow.Value;
+            // Update _numVersesSaved
+            _numVersesSaved = trbNumberToShow.Value;
             // Update the text for rdoShowLeastImportant
-            rdoShowLeastImportant.Text = $"Show {_numToShow} Least Important";
+            rdoShowLeastImportant.Text = $"Show {_numVersesSaved} Least Important";
             // Update the text for rdoShowMostImportant
-            rdoShowMostImportant.Text = $"Show {_numToShow} Most Important";
+            rdoShowMostImportant.Text = $"Show {_numVersesSaved} Most Important";
         }
 
         /// <summary>
@@ -522,7 +536,7 @@ namespace FileIOAndLINQ.PresentationLayer
         private void RdoShowLeastImportantCheckedChangedEH(object sender, EventArgs e)
         {
             // Get the list of least important objects from the BLL
-            List<VerseDisplayModel> leastImportantVerses = _verseLogic.GetLeastImportantVerses(_numToShow);
+            List<VerseDisplayModel> leastImportantVerses = _verseLogic.GetLeastImportantVerses(_numVersesSaved);
             // Change the DataSource for the verse binding source
             _versesBindingSource.DataSource = leastImportantVerses;
 
@@ -538,7 +552,7 @@ namespace FileIOAndLINQ.PresentationLayer
         private void RdoShowMostImportantCheckedChangedEH(object sender, EventArgs e)
         {
             // Get the list of most important objects from the BLL
-            List<VerseDisplayModel> mostImportantVerses = _verseLogic.GetMostImportantVerses(_numToShow);
+            List<VerseDisplayModel> mostImportantVerses = _verseLogic.GetMostImportantVerses(_numVersesSaved);
             // Change the DataSource for the verse binding source
             _versesBindingSource.DataSource = mostImportantVerses;
 
@@ -555,6 +569,50 @@ namespace FileIOAndLINQ.PresentationLayer
         {
             // Refresh the dgv with all the users verses
             RefreshVersesDgv();
+        }
+
+        /// <summary>
+        /// Handles real-time searching and filtering of the verses based on user input in the search box
+        /// </summary>
+        private void TxtbxSearch_TextChanged(object sender, EventArgs e)
+        {
+            // Get the search text and convert it to lower case for case insensitive searching
+            string search = txtbxSearch.Text.Trim().ToLower();
+            // Get all verses from the business logic layer
+            var allVerses = _verseLogic.GetAllVerses();
+            // Check if the search box is empty, if it is show all verses, otherwise filter the verses based on the search text
+            if (string.IsNullOrEmpty(search))
+            {
+                // Show all verses
+                _versesBindingSource.DataSource = allVerses;
+            }
+            else
+            {
+                // Filter the verses based on the search text and update the data source for the binding source
+                _versesBindingSource.DataSource = allVerses.FindAll(v =>
+                    (v.Reference != null && v.Reference.ToLower().Contains(search)) ||
+                    (v.Text != null && v.Text.ToLower().Contains(search)) ||
+                    (v.Meaning != null && v.Meaning.ToLower().Contains(search)) ||
+                    v.Importance.ToString().Contains(search)
+                );
+            }
+            // Format the data grid view after updating the data source
+            FormatVersesDgv();
+        }
+
+        /// <summary>
+        /// Updates the lblVersesSaved label with the total number of verses (including ranges)
+        /// </summary>
+        private void UpdateVersesSavedLabel()
+        {
+            // Check to make sure the verse logic variable and the label are not null
+            if (_verseLogic != null && lblVersesSaved != null)
+            {
+                // Get the total verse count from the business logic layer and update the label text
+                int total = _verseLogic.GetTotalVerseCount();
+                // Update the label text with the total number of verses
+                lblVersesSaved.Text = total.ToString();
+            }
         }
     }
 }
