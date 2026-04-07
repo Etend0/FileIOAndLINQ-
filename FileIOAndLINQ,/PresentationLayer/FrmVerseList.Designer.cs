@@ -365,6 +365,7 @@
             trbNumberToShow.Name = "trbNumberToShow";
             trbNumberToShow.Size = new Size(300, 45);
             trbNumberToShow.TabIndex = 3;
+            trbNumberToShow.ValueChanged += TrbNumberToShowScrollEH;
             // 
             // dgvVerseDisplay
             // 

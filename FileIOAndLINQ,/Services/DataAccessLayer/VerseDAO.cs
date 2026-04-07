@@ -1,4 +1,5 @@
 ﻿using FileIOAndLINQ.Models;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,6 +27,8 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
         {
             // Create a new List of VerseDataModels
             _verses = new List<VerseDataModel>();
+            // Set the EPPlus license context for non-commercial use
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
         /// <summary>
@@ -87,6 +90,49 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
                     // Use ServiceStack to serialize to csv
                     serialized = ServiceStack.Text.CsvSerializer.SerializeToString(_verses);
                     break;
+                case ".xml":
+                    // Use ServiceStack to serialize to xml
+                    serialized = ServiceStack.Text.XmlSerializer.SerializeToString(_verses);
+                    break;
+                case ".xlsx":
+                    // Use EPPlus to write directly to the xlsx file
+                    try
+                    {
+                        // Create a new ExcelPackage
+                        using (ExcelPackage package = new ExcelPackage())
+                        {
+                            // Add a worksheet named "Verses"
+                            ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Verses");
+                            // Add header row
+                            worksheet.Cells[1, 1].Value = "Id";
+                            worksheet.Cells[1, 2].Value = "Book";
+                            worksheet.Cells[1, 3].Value = "Chapter";
+                            worksheet.Cells[1, 4].Value = "Verse";
+                            worksheet.Cells[1, 5].Value = "Text";
+                            worksheet.Cells[1, 6].Value = "Meaning";
+                            worksheet.Cells[1, 7].Value = "Importance";
+                            // Loop through the _verses list and add each verse to a row
+                            for (int i = 0; i < _verses.Count; i++)
+                            {
+                                int row = i + 2;
+                                worksheet.Cells[row, 1].Value = _verses[i].Id;
+                                worksheet.Cells[row, 2].Value = _verses[i].Book;
+                                worksheet.Cells[row, 3].Value = _verses[i].Chapter;
+                                worksheet.Cells[row, 4].Value = _verses[i].Verse;
+                                worksheet.Cells[row, 5].Value = _verses[i].Text;
+                                worksheet.Cells[row, 6].Value = _verses[i].Meaning;
+                                worksheet.Cells[row, 7].Value = _verses[i].Importance;
+                            }
+                            // Save the package to the file
+                            FileInfo fileInfo = new FileInfo(fileName);
+                            package.SaveAs(fileInfo);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return ex.Message;
+                    }
+                    break;
                 default:
                     return "File not recognized";
             }
@@ -114,50 +160,92 @@ namespace FileIOAndLINQ.Services.DataAccessLayer
             string data = "";
             List<VerseDataModel> dataVerses = new List<VerseDataModel>();
 
-            // Set up a try-catch to read files text
-            try
+            // Handle xlsx separately since EPPlus reads the file directly
+            if (Path.GetExtension(fileName) == ".xlsx")
             {
-                // Get the text from the file
-                data = File.ReadAllText(fileName);
-
-            }
-            catch (Exception ex)
-            {
-                // Return the exception message
-                return ex.Message;
-            }
-            // Create a switch based on the file extension
-            switch (Path.GetExtension(fileName))
-            {
-                case ".txt":
-                    // Split the text file on the newline character
-                    string[] lines = data.Split("\n");
-                    // Loop through the array of lines
-                    foreach (string line in lines)
+                try
+                {
+                    FileInfo fileInfo = new FileInfo(fileName);
+                    using (ExcelPackage package = new ExcelPackage(fileInfo))
                     {
-                        // Check if each line contains data
-                        if (!string.IsNullOrEmpty(line))
+                        // Get the first worksheet
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                        // Get the number of rows with data
+                        int rowCount = worksheet.Dimension.Rows;
+                        // Loop through each row starting at row 2
+                        for (int row = 2; row <= rowCount; row++)
                         {
-                            // If so, convert the data to a VerseDataModel
-                            //    and add it to the dataVerses list
-                            dataVerses.Add(ConvertTxtToVerseDataModel(line));
+                            // Create a new VerseDataModel from each row
+                            VerseDataModel verse = new VerseDataModel(
+                                0,
+                                worksheet.Cells[row, 2].Value?.ToString() ?? "",
+                                int.TryParse(worksheet.Cells[row, 3].Value?.ToString(), out int chapter) ? chapter : 0,
+                                worksheet.Cells[row, 4].Value?.ToString() ?? "",
+                                worksheet.Cells[row, 5].Value?.ToString() ?? "",
+                                worksheet.Cells[row, 6].Value?.ToString() ?? "",
+                                int.TryParse(worksheet.Cells[row, 7].Value?.ToString(), out int importance) ? importance : 0
+                            );
+                            dataVerses.Add(verse);
                         }
                     }
-                    break;
+                }
+                catch (Exception ex)
+                {
+                    return ex.Message;
+                }
+            }
+            else
+            {
+                // Set up a try-catch to read files text
+                try
+                {
+                    // Get the text from the file
+                    data = File.ReadAllText(fileName);
 
-                case ".json":
-                    // Deserialize the data using the JsonSerializer
-                    dataVerses = ServiceStack.Text.JsonSerializer.DeserializeFromString<List<VerseDataModel>>(data);
-                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Return the exception message
+                    return ex.Message;
+                }
+                // Create a switch based on the file extension
+                switch (Path.GetExtension(fileName))
+                {
+                    case ".txt":
+                        // Split the text file on the newline character
+                        string[] lines = data.Split("\n");
+                        // Loop through the array of lines
+                        foreach (string line in lines)
+                        {
+                            // Check if each line contains data
+                            if (!string.IsNullOrEmpty(line))
+                            {
+                                // If so, convert the data to a VerseDataModel
+                                //    and add it to the dataVerses list
+                                dataVerses.Add(ConvertTxtToVerseDataModel(line));
+                            }
+                        }
+                        break;
 
-                case ".csv":
-                    // Deserialize the data using the CsvSerializer
-                    dataVerses = ServiceStack.Text.CsvSerializer.DeserializeFromString<List<VerseDataModel>>(data);
-                    break;
+                    case ".json":
+                        // Deserialize the data using the JsonSerializer
+                        dataVerses = ServiceStack.Text.JsonSerializer.DeserializeFromString<List<VerseDataModel>>(data);
+                        break;
 
-                default:
-                    // Return the issue to the user
-                    return "File not recognized";
+                    case ".csv":
+                        // Deserialize the data using the CsvSerializer
+                        dataVerses = ServiceStack.Text.CsvSerializer.DeserializeFromString<List<VerseDataModel>>(data);
+                        break;
+
+                    case ".xml":
+                        // Deserialize the data using the XmlSerializer
+                        dataVerses = ServiceStack.Text.XmlSerializer.DeserializeFromString<List<VerseDataModel>>(data);
+                        break;
+
+                    default:
+                        // Return the issue to the user
+                        return "File not recognized";
+                }
             }
             // Loop throughhe dataVerses list
             foreach (VerseDataModel newVerse in dataVerses)
